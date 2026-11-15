@@ -20,7 +20,7 @@ export function getAllSermons(): Sermon[] {
   if (!fs.existsSync(DIR)) return [];
   return fs
     .readdirSync(DIR)
-    .filter((f) => f.endsWith(".md"))
+    .filter((f) => f.endsWith(".md") && !f.endsWith(".summary.md"))
     .map((f) => readSermon(f.replace(/\.md$/, "")))
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 }
@@ -39,4 +39,9 @@ export function readSermon(slug: string): Sermon {
     youtube: data.youtube,
     content,
   };
+}
+
+export function readSummary(slug: string): string | undefined {
+  const f = path.join(DIR, `${slug}.summary.md`);
+  return fs.existsSync(f) ? fs.readFileSync(f, "utf8") : undefined;
 }
