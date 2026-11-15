@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { summarize } from "@/lib/summarize";
 import BiblePanel from "./BiblePanel";
@@ -145,13 +146,15 @@ export default function SermonReader({ content, summary, passage, title }: { con
             <button onClick={closePlayer} aria-label="닫기">✕</button>
           </div>
         )}
-        <div className="fabs">
-          {passage && <Fab color="#3f6fd1" icon="📖" label="성경" on={sheet === "bible"} onClick={() => setSheet(sheet === "bible" ? "" : "bible")} />}
-          <Fab color="#7a54c9" icon="✨" label="요약" on={sheet === "sum"} onClick={() => setSheet(sheet === "sum" ? "" : "sum")} />
-          <Fab color="#ec8a2f" icon="🎧" label="듣기" on={listen} onClick={() => { if (!supported) return alert("이 브라우저는 음성 읽기를 지원하지 않습니다."); listen ? closePlayer() : start(0); }} />
-          <Fab color="#6b7280" icon="가" label="글자" onClick={() => setSize((s) => (s >= 26 ? 16 : s + 2))} />
-        </div>
       </div>
+
+      <nav className="tabbar">
+        <Link href="/"><span>📚</span>설교</Link>
+        {passage && <button className={sheet === "bible" ? "on" : ""} onClick={() => setSheet(sheet === "bible" ? "" : "bible")}><span>📖</span>성경</button>}
+        <button className={sheet === "sum" ? "on" : ""} onClick={() => setSheet(sheet === "sum" ? "" : "sum")}><span>✨</span>요약</button>
+        <button className={listen ? "on" : ""} onClick={() => { if (!supported) return alert("이 브라우저는 음성 읽기를 지원하지 않습니다."); listen ? closePlayer() : start(0); }}><span>🎧</span>듣기</button>
+        <button onClick={() => setSize((x) => (x >= 26 ? 16 : x + 2))}><span className="ga">가</span>글자</button>
+      </nav>
 
       {sel && (
         <div className="selbar" style={{ left: sel.x, top: sel.y }} onPointerDown={(e) => e.preventDefault()}>
@@ -176,13 +179,5 @@ export default function SermonReader({ content, summary, passage, title }: { con
         )}
       </Sheet>
     </>
-  );
-}
-
-function Fab({ color, icon, label, onClick, on }: { color: string; icon: string; label: string; onClick: () => void; on?: boolean }) {
-  return (
-    <button className={`fab ${on ? "on" : ""}`} style={{ background: color }} onClick={onClick} aria-label={label}>
-      <span className="ic">{icon}</span><span className="lb">{label}</span>
-    </button>
   );
 }
