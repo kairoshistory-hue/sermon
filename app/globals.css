@@ -108,3 +108,6 @@ main{padding-bottom:calc(var(--tab) + 70px)}
 .steps{list-style:none;padding:0;margin:18px 0;display:flex;flex-direction:column;gap:8px;font-size:.92rem}
 .steps small{color:var(--mut)}.steps li.err{color:#d04437}
 .result{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;align-items:center}.result .btn{margin-top:0;display:inline-block}
+.btn.danger{background:#c0392b;margin-left:auto}
+.row .btn{margin-top:0}
+.editlink{display:inline-block;margin:10px 8px 0 0;padding:7px 14px;border-radius:99px;border:1px solid var(--line);font-size:.85rem;color:var(--mut)}

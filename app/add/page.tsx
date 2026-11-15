@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { cleanTranscript, parseMeta } from "@/lib/clean";
+import { autoStructure } from "@/lib/structure";
 import { PREACHERS, findPreacher } from "@/lib/preachers";
 
 type Meta = ReturnType<typeof parseMeta>;
 type Step = { label: string; state: "wait" | "run" | "ok" | "warn" | "err"; note?: string };
-const LABELS = ["원문 정리 (시간 표시 제거·교정 사전)", "AI 오타 교정", "AI 요약 작성", "사이트에 올리기"];
+const LABELS = ["원문 정리 (시간 표시 제거·교정 사전)", "AI 오타 교정", "AI 소제목·성경 인용·문단 정리", "AI 요약 작성", "사이트에 올리기"];
 
 async function post(url: string, body: any) {
   const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -71,17 +72,21 @@ export default function Add() {
       } catch (e: any) { set(1, { state: "warn", note: `건너뜀: ${e.message}` }); }
 
       set(2, { state: "run" });
+      try { md = await autoStructure(md, pass); set(2, { state: "ok" }); }
+      catch (e: any) { set(2, { state: "warn", note: `건너뜀(기본 문단 나누기 사용): ${e.message}` }); }
+
+      set(3, { state: "run" });
       let summary = "";
       try {
         summary = (await post("/api/ai", { passcode: pass, task: "summary", text: md, title: meta.title, passage: meta.passage })).summary;
-        set(2, { state: "ok" });
-      } catch (e: any) { set(2, { state: "warn", note: `건너뜀(자동 추출 요약 사용): ${e.message}` }); }
+        set(3, { state: "ok" });
+      } catch (e: any) { set(3, { state: "warn", note: `건너뜀(자동 추출 요약 사용): ${e.message}` }); }
 
       const fm = `---\n${Object.entries(meta).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join("\n")}\n---\n\n`;
       setDone({ slug, md: fm + md, summary });
-      set(3, { state: "run" });
-      try { await post("/api/publish", { passcode: pass, slug, markdown: fm + md, summary }); set(3, { state: "ok", note: "1~2분 뒤 사이트에 반영됩니다" }); }
-      catch (e: any) { set(3, { state: "err", note: e.message }); }
+      set(4, { state: "run" });
+      try { await post("/api/publish", { passcode: pass, slug, markdown: fm + md, summary }); set(4, { state: "ok", note: "1~2분 뒤 사이트에 반영됩니다" }); }
+      catch (e: any) { set(4, { state: "err", note: e.message }); }
     } finally { setBusy(false); }
   }
 
