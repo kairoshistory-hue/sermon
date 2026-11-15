@@ -1,3 +1,5 @@
+import { findPreacher } from "./preachers";
+
 // 무료 원고 정리: 규칙 + 교정 사전 기반 (AI 사용 안 함)
 export const DEFAULT_FIXES: [string, string][] = [
   ["길리앗", "길르앗"], ["성전가", "승전가"], ["톱당", "돕 땅"], ["돕으로", "돕 땅으로"],
@@ -7,6 +9,7 @@ export const DEFAULT_FIXES: [string, string][] = [
   ["나시린", "나실인"], ["드릴라", "들릴라"], ["삼선", "삼손"], ["나답과 아비우", "나답과 아비후"],
   ["무난료", "무남독녀"], ["문난료", "무남독녀"], ["긍입니다", "긍휼입니다"], ["측은 지심", "측은지심"],
   ["굿뉴스", "굿 뉴스"],
+  ["안몬", "암몬"], ["온니엘", "옷니엘"], ["기도온", "기드온"], ["악순난", "악순환"],
   ["복임", "보김"], ["복김", "보김"], ["광해 설교", "강해 설교"], ["요호수아", "여호수아"], ["병곡점", "변곡점"],
   ["문화세 지파", "므낫세 지파"], ["철봉거", "철병거"], ["아세랍니다", "아세라입니다"], ["히스기아", "히스기야"],
   ["아수르", "앗수르"], ["노욕을", "노역을"], ["가단한 땅", "가나안 땅"], ["할례를 향했", "할례를 행했"],
@@ -22,10 +25,17 @@ function fixJosa(t: string) {
   return t;
 }
 
+const HEADER_RE = /(?:\(\d+\)\s*)?\[[^\]\n]{1,40}\][\s\S]{0,300}?\d{4}\.\d{1,2}\.\d{1,2}\s*-?\s*YouTube\s*/;
+
 export function cleanTranscript(raw: string, extra: [string, string][] = []) {
+  // 1) 'Transcript:' 이전(제목·주소·화면 문구)은 모두 버림, 없으면 제목줄만 제거
+  const ti = raw.search(/^\s*Transcript:\s*$/m);
+  raw = ti >= 0 ? raw.slice(ti).replace(/^\s*Transcript:\s*/, "") : raw.replace(HEADER_RE, "");
+  // 2) 화면 UI 문구가 같이 복사된 경우 제거
+  raw = raw.replace(/^\s*(?:⚠️.*|정보 수정|내 교정 사전.*|새 설교 추가|\d{4}-\d{2}-\d{2})\s*$/gm, "");
+
   let t = raw
     .replace(/^\s*\d+\t/gm, "")                       // 줄 번호
-    .replace(/^\s*(?:\(\d+\)\s*)?\[[^\]]+\][^\n]*?ㅣ[^\n]*?ㅣ[\d.]+\s*-\s*YouTube\s*/, "") // 제목줄은 메타로 따로 처리
     .replace(/\[(?:한숨|음악|박수|웃음|기도)\]\s*/g, "")
     .replace(/^https?:\/\/\S+\s*$/gm, "")
     .replace(/^Transcript:\s*$/gm, "")
@@ -48,22 +58,29 @@ export function cleanTranscript(raw: string, extra: [string, string][] = []) {
   return { markdown: paras.join("\n\n"), applied };
 }
 
+const NOISE_TAG = /^(한숨|음악|박수|웃음|기도|목을 가다듬음)/;
+
+// 지원 형식 예)
+//  (2) [일요주일1부예배] 사사기 강해(1) 제목 (사사기 2:1-9)ㅣ양재경 목사ㅣ2026.09.06 - YouTube
+//  (2) [이재훈 위임목사] 사사기 강해(9) 제목 \n(사사기 11:1-6, 29-35) | 2026.11.15 - YouTube
 export function parseMeta(raw: string) {
   const url = raw.match(/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=[\w-]+/)?.[0] ?? "";
-  const m = raw.slice(0, 600).match(/\[([^\]]+)\]\s*([^ㅣ\n]+?)\s*ㅣ\s*([^ㅣ\n]+?)\s*ㅣ\s*(\d{4})\.(\d{1,2})\.(\d{1,2})/);
-  let series = "", title = "", passage = "";
-  if (m) {
-    let mid = m[2].trim();
+  const head = raw.slice(0, 2500);
+  const m = head.match(/\[([^\]\n]{1,40})\]\s*([\s\S]{1,300}?)(\d{4})\.(\d{1,2})\.(\d{1,2})/);
+  let series = "", title = "", passage = "", preacher = "", service = "";
+  if (m && !NOISE_TAG.test(m[1])) {
+    const br = m[1].trim();
+    const bp = findPreacher(br);
+    if (bp) preacher = `${bp.name} 목사`; else service = br;
+    const parts = m[2].replace(/\s+/g, " ").replace(/[ㅣ|\s]+$/, "").split(/\s*[ㅣ|]\s*/).map((x) => x.trim()).filter(Boolean);
+    let mid = parts[0] ?? "";
+    if (parts[1] && !preacher) { const pp = findPreacher(parts[1]); preacher = pp ? `${pp.name} 목사` : parts[1]; }
     const pm = mid.match(/\(\s*([가-힣]+\s*\d+\s*:\s*[\d\-, ]+)\s*\)\s*$/);
     if (pm) { passage = pm[1].replace(/\s+/g, " ").trim(); mid = mid.slice(0, pm.index).trim(); }
     const sm = mid.match(/^(.+?\(\d+\))\s*(.*)$/);
     if (sm) { series = sm[1]; title = sm[2].trim(); } else title = mid;
   }
-  return {
-    youtube: url,
-    service: m?.[1] ?? "",
-    series, passage, title,
-    preacher: m?.[3]?.trim() ?? "",
-    date: m ? `${m[4]}-${m[5].padStart(2, "0")}-${m[6].padStart(2, "0")}` : new Date().toISOString().slice(0, 10),
-  };
+  if (!preacher) { const kp = findPreacher(head.slice(0, 800)); if (kp) preacher = `${kp.name} 목사`; }
+  const date = m && !NOISE_TAG.test(m[1]) ? `${m[3]}-${m[4].padStart(2, "0")}-${m[5].padStart(2, "0")}` : new Date().toISOString().slice(0, 10);
+  return { youtube: url, service, series, passage, title, preacher, date };
 }
