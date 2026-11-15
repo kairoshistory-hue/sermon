@@ -1,70 +1,65 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { cleanTranscript, parseMeta } from "@/lib/clean";
 
-const today = () => new Date().toISOString().slice(0, 10);
+type Meta = ReturnType<typeof parseMeta>;
 
 export default function Add() {
   const [raw, setRaw] = useState("");
-  const [passcode, setPasscode] = useState("");
-  const [meta, setMeta] = useState({ title: "", series: "", passage: "", preacher: "", service: "", date: today(), youtube: "" });
+  const [meta, setMeta] = useState<Meta>(parseMeta(""));
   const [out, setOut] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
+  const [applied, setApplied] = useState<string[]>([]);
+  const [custom, setCustom] = useState("");   // "틀린말=맞는말" 한 줄씩
 
-  // 확장 프로그램 출력의 첫 줄(제목)·URL에서 메타데이터를 대략 채움
-  function autofill(text: string) {
-    setRaw(text);
-    const url = text.match(/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=[\w-]+/)?.[0];
-    const first = text.split("\n")[0] ?? "";
-    const m = first.match(/\[(.+?)\]\s*(.+?)\s*\((.+?)\)\s*(.+?)ㅣ(.+?)ㅣ([\d.]+)/);
-    setMeta((p) => ({
-      ...p,
-      youtube: url ?? p.youtube,
-      ...(m ? { service: m[1], series: m[2].replace(/\s*\(\d+\)/, (x) => x), passage: m[3] ? p.passage : p.passage, title: m[4].trim(), preacher: m[5].trim(), date: m[6].replace(/\./g, "-").replace(/^(\d{4})-(\d{2})-(\d{2}).*/, "$1-$2-$3") } : {}),
-    }));
-  }
+  useEffect(() => { try { setCustom(localStorage.getItem("fixes") ?? ""); } catch {} }, []);
 
-  async function clean() {
-    setLoading(true); setErr(""); setOut("");
-    try {
-      const r = await fetch("/api/clean", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ raw, passcode }) });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error);
-      setOut(j.markdown);
-    } catch (e: any) { setErr(e.message); } finally { setLoading(false); }
+  const extra = (): [string, string][] =>
+    custom.split("\n").map((l) => l.split("=").map((x) => x.trim()) as [string, string]).filter(([a, b]) => a && b);
+
+  function run() {
+    try { localStorage.setItem("fixes", custom); } catch {}
+    setMeta(parseMeta(raw));
+    const r = cleanTranscript(raw, extra());
+    setOut(r.markdown); setApplied(r.applied);
   }
 
   const fm = `---\n${Object.entries(meta).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join("\n")}\n---\n\n`;
-  const full = fm + out;
-  const filename = `${meta.date}-${(meta.series.match(/\d+/)?.[0] ?? "sermon")}.md`;
-
+  const filename = `${meta.date}-${meta.series.match(/\d+/)?.[0] ?? "sermon"}.md`;
   function download() {
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([full], { type: "text/markdown" }));
+    a.href = URL.createObjectURL(new Blob([fm + out], { type: "text/markdown" }));
     a.download = filename; a.click();
   }
 
   return (
-    <>
+    <div className="admin">
       <h1>새 설교 추가</h1>
-      <p className="muted">YouTube 요약 확장 프로그램에서 복사한 전체 텍스트를 붙여넣으세요. 타임스탬프 제거와 오타 교정을 자동으로 합니다.</p>
-      <textarea className="ta" rows={10} placeholder="여기에 붙여넣기" value={raw} onChange={(e) => autofill(e.target.value)} />
-      <div className="grid">
-        {(Object.keys(meta) as (keyof typeof meta)[]).map((k) => (
-          <label key={k}>{k}<input value={meta[k]} onChange={(e) => setMeta({ ...meta, [k]: e.target.value })} /></label>
-        ))}
-        <label>관리자 암호(설정한 경우)<input type="password" value={passcode} onChange={(e) => setPasscode(e.target.value)} /></label>
-      </div>
-      <button className="btn" onClick={clean} disabled={loading || !raw}>{loading ? "정리 중… (1~2분)" : "원고 정리하기"}</button>
-      {err && <p className="err">{err}</p>}
-      {out && (
-        <>
-          <h2>미리보기 (직접 수정 가능)</h2>
-          <textarea className="ta" rows={20} value={out} onChange={(e) => setOut(e.target.value)} />
-          <button className="btn" onClick={download}>{filename} 다운로드</button>
-          <p className="muted small">다운로드한 파일을 <code>content/sermons/</code> 폴더에 넣고 git push 하면 Vercel이 자동 배포합니다.</p>
-        </>
-      )}
-    </>
+      <p className="muted">YouTube 요약 확장 프로그램에서 복사한 텍스트를 붙여넣으세요. 시간 표시 제거와 오타 교정이 브라우저 안에서 무료로 처리됩니다.</p>
+
+      <label className="lbl">① 원문 붙여넣기</label>
+      <textarea className="ta" rows={9} value={raw} onChange={(e) => setRaw(e.target.value)} placeholder="여기에 붙여넣기" />
+
+      <details className="dict">
+        <summary>② 내 교정 사전 (선택)</summary>
+        <p className="muted small">한 줄에 하나씩 <code>틀린말=맞는말</code> 형식. 이 브라우저에 저장되어 다음에도 적용됩니다.</p>
+        <textarea className="ta" rows={4} value={custom} onChange={(e) => setCustom(e.target.value)} placeholder={"예)\n사사김=사사기"} />
+      </details>
+
+      <button className="btn" onClick={run} disabled={!raw}>정리하기</button>
+
+      {out && (<>
+        <label className="lbl">③ 정보 확인</label>
+        <div className="grid">
+          {(Object.keys(meta) as (keyof Meta)[]).map((k) => (
+            <label key={k}><span>{k}</span><input value={meta[k]} onChange={(e) => setMeta({ ...meta, [k]: e.target.value })} /></label>
+          ))}
+        </div>
+        {applied.length > 0 && <p className="small muted">적용된 교정: {applied.join(" · ")}</p>}
+        <label className="lbl">④ 본문 확인·수정 (<code>## 소제목</code>, <code>&gt; 인용</code> 직접 추가 가능)</label>
+        <textarea className="ta" rows={22} value={out} onChange={(e) => setOut(e.target.value)} />
+        <button className="btn" onClick={download}>{filename} 다운로드</button>
+        <p className="small muted">다운로드한 파일을 저장소의 <code>content/sermons/</code>에 넣고 push하면 자동 배포됩니다.</p>
+      </>)}
+    </div>
   );
 }

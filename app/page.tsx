@@ -5,19 +5,18 @@ export default function Home() {
   const sermons = getAllSermons();
   return (
     <>
-      <h1>설교 목록</h1>
+      <section className="intro"><h1>설교집</h1><p>말씀을 다시 읽고 묵상합니다.</p></section>
       {sermons.length === 0 && <p className="muted">아직 설교가 없습니다.</p>}
-      <ul className="list">
+      <div className="cards">
         {sermons.map((s) => (
-          <li key={s.slug}>
-            <Link href={`/sermons/${s.slug}`}>
-              <strong>{s.title}</strong>
-              <span className="muted">{[s.series, s.passage].filter(Boolean).join(" · ")}</span>
-              <span className="muted small">{s.date} · {s.preacher}</span>
-            </Link>
-          </li>
+          <Link key={s.slug} href={`/sermons/${s.slug}`} className="card">
+            <span className="eyebrow">{s.series}</span>
+            <strong>{s.title}</strong>
+            <span className="muted">{s.passage}</span>
+            <span className="muted small">{s.date} · {s.preacher}</span>
+          </Link>
         ))}
-      </ul>
+      </div>
     </>
   );
 }
