@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 import { parsePassage } from "@/lib/bible";
+import { copyText, shareText, TOAST } from "@/lib/share";
 
 type V = { name: string; verses: { n: number; text: string }[] };
 
-export default function BiblePanel({ passage }: { passage: string }) {
+export default function BiblePanel({ passage, onToast }: { passage: string; onToast: (m: string) => void }) {
   const [data, setData] = useState<V[] | null>(null);
   const [tab, setTab] = useState(0);
   const [err, setErr] = useState("");
@@ -31,6 +32,9 @@ export default function BiblePanel({ passage }: { passage: string }) {
     return () => { dead = true; };
   }, [passage]);
 
+  const bibleText = () =>
+    data ? `${passage} [${data[tab].name}]\n\n` + data[tab].verses.map((v) => `${v.n} ${v.text}`).join("\n") : "";
+
   return (
     <div>
       <div className="seg">
@@ -40,6 +44,12 @@ export default function BiblePanel({ passage }: { passage: string }) {
       </div>
       {!data && !err && <p className="muted">불러오는 중…</p>}
       {err && <p className="err">{err}</p>}
+      {data && (
+        <div className="actions">
+          <button onClick={async () => onToast((await copyText(bibleText())) ? "복사했습니다" : TOAST.failed)}>📋 복사</button>
+          <button className="kakao" onClick={async () => onToast(TOAST[await shareText(bibleText())])}>💬 카톡 공유</button>
+        </div>
+      )}
       {data && (
         <div className="verses">
           {data[tab].verses.map((v, i) => {

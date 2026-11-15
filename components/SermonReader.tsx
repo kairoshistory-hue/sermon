@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { summarize } from "@/lib/summarize";
 import BiblePanel from "./BiblePanel";
 import Sheet from "./Sheet";
+import { copyText, mdToPlain, shareText, TOAST } from "@/lib/share";
 
 const RATES = [0.7, 0.85, 1, 1.15, 1.3, 1.5, 1.75, 2];
 
@@ -19,10 +20,14 @@ function chunk(text: string, max = 130): string[] {
   return out.flatMap((c) => (c.length > 220 ? c.match(/.{1,200}(\s|$)/g)!.map((x) => x.trim()) : [c]));
 }
 
-export default function SermonReader({ content, summary, passage }: { content: string; summary?: string; passage?: string }) {
+export default function SermonReader({ content, summary, passage, title }: { content: string; summary?: string; passage?: string; title?: string }) {
   const [sheet, setSheet] = useState<"" | "sum" | "bible">("");
   const [size, setSize] = useState(19);
   const [progress, setProgress] = useState(0);
+  const [toast, setToast] = useState("");
+  const [sel, setSel] = useState<{ text: string; x: number; y: number } | null>(null);
+  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 2200); };
+  const footer = () => `\n\n— ${title ?? "설교"}${passage ? ` (${passage})` : ""}\n${location.href}`;
 
   // ── 읽어주기(TTS) ──
   const blocks = useMemo(() => content.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean), [content]);
@@ -82,6 +87,30 @@ export default function SermonReader({ content, summary, passage }: { content: s
     window.addEventListener("scroll", f, { passive: true }); return () => window.removeEventListener("scroll", f);
   }, []);
 
+  // 본문 글 선택 → 복사/공유 바
+  useEffect(() => {
+    let timer: any;
+    const f = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const g = window.getSelection();
+        const text = g?.toString().trim() ?? "";
+        const node = g?.anchorNode?.parentElement;
+        if (!g || g.rangeCount === 0 || text.length < 2 || !node?.closest(".body")) { setSel(null); return; }
+        const r = g.getRangeAt(0).getBoundingClientRect();
+        const below = r.bottom + 60 < window.innerHeight - 150;
+        setSel({ text, x: Math.min(Math.max(r.left + r.width / 2, 120), window.innerWidth - 120), y: below ? r.bottom + 12 : Math.max(r.top - 56, 70) });
+      }, 180);
+    };
+    document.addEventListener("selectionchange", f); return () => { document.removeEventListener("selectionchange", f); clearTimeout(timer); };
+  }, []);
+
+  const summaryText = () => {
+    if (summary) return mdToPlain(summary);
+    if (!auto) return "";
+    return `【핵심 문장】\n` + auto.top.map((x) => `• ${x}`).join("\n") + `\n\n【키워드】 ` + auto.keywords.map((k) => `#${k}`).join(" ");
+  };
+
   const auto = useMemo(() => (sheet === "sum" && !summary ? summarize(content) : null), [sheet, summary, content]);
 
   return (
@@ -124,8 +153,20 @@ export default function SermonReader({ content, summary, passage }: { content: s
         </div>
       </div>
 
-      <Sheet open={sheet === "bible"} title={passage ?? ""} onClose={() => setSheet("")}>{passage && <BiblePanel passage={passage} />}</Sheet>
+      {sel && (
+        <div className="selbar" style={{ left: sel.x, top: sel.y }} onPointerDown={(e) => e.preventDefault()}>
+          <button onClick={async () => { flash((await copyText(sel.text)) ? "복사했습니다" : TOAST.failed); }}>📋 복사</button>
+          <button className="kakao" onClick={async () => { flash(TOAST[await shareText(sel.text + footer())]); }}>💬 카톡 공유</button>
+        </div>
+      )}
+      {toast && <div className="toast">{toast}</div>}
+
+      <Sheet open={sheet === "bible"} title={passage ?? ""} onClose={() => setSheet("")}>{passage && <BiblePanel passage={passage} onToast={flash} />}</Sheet>
       <Sheet open={sheet === "sum"} title="설교 요약" onClose={() => setSheet("")}>
+        <div className="actions">
+          <button onClick={async () => flash((await copyText(summaryText() + footer())) ? "복사했습니다" : TOAST.failed)}>📋 복사</button>
+          <button className="kakao" onClick={async () => flash(TOAST[await shareText(summaryText() + footer())])}>💬 카톡 공유</button>
+        </div>
         {summary ? <div className="md"><ReactMarkdown>{summary}</ReactMarkdown></div> : auto && (
           <div className="md">
             <h4>핵심 문장</h4><ul>{auto.top.map((s, i) => <li key={i}>{s}</li>)}</ul>

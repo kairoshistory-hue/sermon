@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getAllSermons, readSermon, readSummary } from "@/lib/sermons";
+import { findPreacher } from "@/lib/preachers";
 import SermonReader from "@/components/SermonReader";
 
 export function generateStaticParams() { return getAllSermons().map((s) => ({ slug: s.slug })); }
@@ -13,9 +14,9 @@ export default function SermonPage({ params }: { params: { slug: string } }) {
         {s.series && <span className="eyebrow">{s.series}</span>}
         <h1>{s.title}</h1>
         {s.passage && <p className="ref">{s.passage}</p>}
-        <p className="meta">{[s.preacher, s.service, s.date].filter(Boolean).join(" · ")}</p>
+        <p className="meta">{[findPreacher(s.preacher) ? `${findPreacher(s.preacher)!.church} ${findPreacher(s.preacher)!.role} ${findPreacher(s.preacher)!.name} 목사` : s.preacher, s.service, s.date].filter(Boolean).join(" · ")}</p>
       </header>
-      <SermonReader content={s.content} summary={readSummary(s.slug)} passage={s.passage} />
+      <SermonReader content={s.content} summary={readSummary(s.slug)} passage={s.passage} title={s.title} />
     </article>
   );
 }
