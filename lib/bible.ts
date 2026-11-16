@@ -16,3 +16,14 @@ export function parsePassage(p?: string): Ref | null {
   if (ranges.some(([a, b]) => !a || !b)) return null;
   return { code: idx + 1, book: m[1], chapter: Number(m[2]), ranges };
 }
+
+export const OT_COUNT = 39;
+export const ABBR = "창 출 레 민 신 수 삿 룻 삼상 삼하 왕상 왕하 대상 대하 스 느 에 욥 시 잠 전 아 사 렘 애 겔 단 호 욜 암 옵 욘 미 나 합 습 학 슥 말 마 막 눅 요 행 롬 고전 고후 갈 엡 빌 골 살전 살후 딤전 딤후 딛 몬 히 약 벧전 벧후 요일 요이 요삼 유 계".split(" ");
+
+// 본문 문자열에서 책 번호(1~66) 찾기
+export function bookCode(passage?: string): number | null {
+  if (!passage) return null;
+  const name = passage.trim().split(/\s+/)[0];
+  const i = BOOKS.indexOf(name);
+  return i >= 0 ? i + 1 : null;
+}

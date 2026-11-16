@@ -7,7 +7,9 @@ export default function TabBar({ latest }: { latest?: string }) {
   if (p.startsWith("/sermons")) return null; // 설교 페이지는 자체 하단 메뉴 사용
   const tabs = [
     { href: "/", icon: "📚", label: "설교", on: p === "/" },
-    ...(latest ? [{ href: `/sermons/${latest}`, icon: "📖", label: "최신", on: p.startsWith("/sermons") }] : []),
+    { href: "/bible", icon: "📖", label: "성경", on: p.startsWith("/bible") },
+    { href: "/search", icon: "🔍", label: "찾기", on: p === "/search" },
+    ...(latest ? [{ href: `/sermons/${latest}`, icon: "🆕", label: "최신", on: false }] : []),
     { href: "/add", icon: "➕", label: "추가", on: p === "/add" },
   ];
   return (

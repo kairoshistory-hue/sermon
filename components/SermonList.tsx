@@ -5,20 +5,20 @@ import { PREACHERS, findPreacher } from "@/lib/preachers";
 
 type Item = { slug: string; title: string; series?: string; passage?: string; preacher?: string; date: string };
 
-export default function SermonList({ sermons }: { sermons: Item[] }) {
+export default function SermonList({ sermons, hideFilter }: { sermons: Item[]; hideFilter?: boolean }) {
   const [who, setWho] = useState("all");
   const list = sermons.filter((s) => who === "all" || findPreacher(s.preacher)?.id === who);
   const sel = PREACHERS.find((p) => p.id === who);
   return (
     <>
-      <div className="chips">
+      {!hideFilter && <div className="chips">
         <button className={who === "all" ? "on" : ""} onClick={() => setWho("all")}>전체 <i>{sermons.length}</i></button>
         {PREACHERS.map((p) => (
           <button key={p.id} className={who === p.id ? "on" : ""} onClick={() => setWho(p.id)}>
             {p.name} <i>{sermons.filter((s) => findPreacher(s.preacher)?.id === p.id).length}</i>
           </button>
         ))}
-      </div>
+      </div>}
       {sel && <p className="who">{sel.church} {sel.role} · {sel.name} 목사</p>}
       {list.length === 0 && <p className="muted">아직 올라온 설교가 없습니다.</p>}
       <div className="cards">
