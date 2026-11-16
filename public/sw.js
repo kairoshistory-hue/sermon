@@ -1,4 +1,4 @@
-// 설교집 서비스 워커: 방문/저장한 페이지를 오프라인에서도 보여 줍니다.
+// Yongin Onnuri Church Sermon 서비스 워커: 방문/저장한 페이지를 오프라인에서도 보여 줍니다.
 const CACHE = "sermons-v1";
 
 self.addEventListener("install", (e) => {
@@ -40,7 +40,7 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) {
-    if (/fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) e.respondWith(swr(req));
+    if (/(fonts\.(googleapis|gstatic)\.com|cdn\.jsdelivr\.net)$/.test(url.hostname)) e.respondWith(swr(req));
     return;
   }
   if (url.searchParams.has("_rsc") || req.headers.get("RSC")) return; // 클라이언트 이동은 Next가 처리(실패 시 전체 이동 → 아래 navigate에서 캐시 응답)

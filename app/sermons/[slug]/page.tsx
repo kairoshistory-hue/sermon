@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { getAllSermons, readSermon, readSummary } from "@/lib/sermons";
-import { findPreacher } from "@/lib/preachers";
+import { churchOf } from "@/lib/churches";
+import { cleanPreacher } from "@/lib/preachers";
+import PassageButton from "@/components/PassageButton";
 import SermonReader from "@/components/SermonReader";
 import OfflineChip from "@/components/OfflineChip";
 
@@ -14,10 +16,9 @@ export default function SermonPage({ params }: { params: { slug: string } }) {
       <header className="hero">
         {s.series && <span className="eyebrow">{s.series}</span>}
         <h1>{s.title}</h1>
-        {s.passage && <p className="ref">{s.passage}</p>}
-        <p className="meta">{[findPreacher(s.preacher) ? `${findPreacher(s.preacher)!.church} ${findPreacher(s.preacher)!.role} ${findPreacher(s.preacher)!.name} 목사` : s.preacher, s.service, s.date].filter(Boolean).join(" · ")}</p>
+        {s.passage && <PassageButton passage={s.passage} />}
+        <p className="meta">{[churchOf(s.preacher, s.church)?.name, s.preacher ? `${cleanPreacher(s.preacher)} 목사` : "", s.service, s.date].filter(Boolean).join(" · ")}</p>
         <OfflineChip slug={s.slug} passage={s.passage} />
-        <a className="editlink" href={`/edit/${s.slug}`}>✏️ 편집</a>
         {s.youtube && <a className="yt" href={s.youtube} target="_blank" rel="noreferrer">▶ 유튜브에서 보기</a>}
       </header>
       <SermonReader content={s.content} summary={readSummary(s.slug)} passage={s.passage} title={s.title} />

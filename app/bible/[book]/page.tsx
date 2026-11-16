@@ -17,7 +17,7 @@ export default function BookPage({ params }: { params: { book: string } }) {
     <>
       <Link href="/bible" className="back">← 성경 66권</Link>
       <h2 className="pagehead">{BOOKS[code - 1]} <span className="muted small">{list.length}편 · 장 순서</span></h2>
-      <SermonList sermons={list} hideFilter />
+      <SermonList sermons={list} showChurch />
     </>
   );
 }

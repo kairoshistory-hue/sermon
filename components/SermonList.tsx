@@ -1,39 +1,25 @@
-"use client";
 import Link from "next/link";
-import { useState } from "react";
-import { PREACHERS, findPreacher } from "@/lib/preachers";
+import { churchOf } from "@/lib/churches";
+import { cleanPreacher } from "@/lib/preachers";
 
-type Item = { slug: string; title: string; series?: string; passage?: string; preacher?: string; date: string };
+type Item = { slug: string; title: string; series?: string; passage?: string; preacher?: string; church?: string; date: string };
 
-export default function SermonList({ sermons, hideFilter }: { sermons: Item[]; hideFilter?: boolean }) {
-  const [who, setWho] = useState("all");
-  const list = sermons.filter((s) => who === "all" || findPreacher(s.preacher)?.id === who);
-  const sel = PREACHERS.find((p) => p.id === who);
+export default function SermonList({ sermons, showChurch }: { sermons: Item[]; showChurch?: boolean }) {
+  if (sermons.length === 0) return <p className="muted">아직 올라온 설교가 없습니다.</p>;
   return (
-    <>
-      {!hideFilter && <div className="chips">
-        <button className={who === "all" ? "on" : ""} onClick={() => setWho("all")}>전체 <i>{sermons.length}</i></button>
-        {PREACHERS.map((p) => (
-          <button key={p.id} className={who === p.id ? "on" : ""} onClick={() => setWho(p.id)}>
-            {p.name} <i>{sermons.filter((s) => findPreacher(s.preacher)?.id === p.id).length}</i>
-          </button>
-        ))}
-      </div>}
-      {sel && <p className="who">{sel.church} {sel.role} · {sel.name} 목사</p>}
-      {list.length === 0 && <p className="muted">아직 올라온 설교가 없습니다.</p>}
-      <div className="cards">
-        {list.map((s) => {
-          const p = findPreacher(s.preacher);
-          return (
-            <Link key={s.slug} href={`/sermons/${s.slug}`} className="card">
-              <span className="eyebrow">{s.series}</span>
-              <strong>{s.title}</strong>
-              <span className="ref">{s.passage}</span>
-              <span className="muted small">{s.date} · {p ? `${p.name} 목사 (${p.church})` : s.preacher}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </>
+    <div className="cards">
+      {sermons.map((s) => {
+        const c = churchOf(s.preacher, s.church);
+        const who = s.preacher ? `${cleanPreacher(s.preacher)} 목사` : "";
+        return (
+          <Link key={s.slug} href={`/sermons/${s.slug}`} className="card">
+            <span className="eyebrow">{s.series}</span>
+            <strong>{s.title}</strong>
+            <span className="ref">{s.passage}</span>
+            <span className="muted small">{[s.date, showChurch && c?.name, who].filter(Boolean).join(" · ")}</span>
+          </Link>
+        );
+      })}
+    </div>
   );
 }

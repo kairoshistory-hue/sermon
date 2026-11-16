@@ -1,10 +1,10 @@
 import { getAllSermons } from "./sermons";
 import { bookCode } from "./bible";
 
-export type SermonItem = { slug: string; title: string; series?: string; passage?: string; preacher?: string; date: string; book: number | null };
+export type SermonItem = { slug: string; title: string; series?: string; passage?: string; preacher?: string; church?: string; date: string; book: number | null };
 
 export function sermonItems(): SermonItem[] {
-  return getAllSermons().map(({ slug, title, series, passage, preacher, date }) => ({ slug, title, series, passage, preacher, date, book: bookCode(passage) }));
+  return getAllSermons().map(({ slug, title, series, passage, preacher, church, date }) => ({ slug, title, series, passage, preacher, church, date, book: bookCode(passage) }));
 }
 
 // 찾기용: 본문을 짧은 일반 텍스트로

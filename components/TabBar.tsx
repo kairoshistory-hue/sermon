@@ -10,7 +10,6 @@ export default function TabBar({ latest }: { latest?: string }) {
     { href: "/bible", icon: "📖", label: "성경", on: p.startsWith("/bible") },
     { href: "/search", icon: "🔍", label: "찾기", on: p === "/search" },
     ...(latest ? [{ href: `/sermons/${latest}`, icon: "🆕", label: "최신", on: false }] : []),
-    { href: "/add", icon: "➕", label: "추가", on: p === "/add" },
   ];
   return (
     <nav className="tabbar">

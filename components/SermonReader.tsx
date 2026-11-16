@@ -23,7 +23,8 @@ function chunk(text: string, max = 130): string[] {
 
 export default function SermonReader({ content, summary, passage, title }: { content: string; summary?: string; passage?: string; title?: string }) {
   const [sheet, setSheet] = useState<"" | "sum" | "bible">("");
-  const [size, setSize] = useState(19);
+  const [size, setSize] = useState(18);
+  useEffect(() => { const f = () => setSheet("bible"); window.addEventListener("open-bible", f); return () => window.removeEventListener("open-bible", f); }, []);
   const [progress, setProgress] = useState(0);
   const [toast, setToast] = useState("");
   const [sel, setSel] = useState<{ text: string; x: number; y: number } | null>(null);

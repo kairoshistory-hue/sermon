@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
+import { churchOf } from "./churches";
 
 const DIR = path.join(process.cwd(), "content", "sermons");
 
@@ -10,6 +11,7 @@ export type Sermon = {
   series?: string;
   passage?: string;
   preacher?: string;
+  church?: string;
   service?: string;
   date: string;
   youtube?: string;
@@ -34,6 +36,7 @@ export function readSermon(slug: string): Sermon {
     series: data.series,
     passage: data.passage,
     preacher: data.preacher,
+    church: churchOf(data.preacher, data.church)?.id,
     service: data.service,
     date: data.date instanceof Date ? data.date.toISOString().slice(0, 10) : String(data.date ?? ""),
     youtube: data.youtube,

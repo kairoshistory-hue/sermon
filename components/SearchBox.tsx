@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { findPreacher } from "@/lib/preachers";
+import { cleanPreacher } from "@/lib/preachers";
 
 type Item = { slug: string; title: string; series?: string; passage?: string; preacher?: string; date: string; text: string };
 
@@ -46,14 +46,14 @@ export default function SearchBox({ items }: { items: Item[] }) {
       {words.length > 0 && <p className="small muted">{results.length}편 찾음</p>}
       <div className="cards">
         {results.map(({ it, snip }) => {
-          const p = findPreacher(it.preacher);
+          const p = it.preacher ? cleanPreacher(it.preacher) : "";
           return (
             <Link key={it.slug} href={`/sermons/${it.slug}`} className="card">
               <span className="eyebrow">{it.series}</span>
               <strong><Mark text={it.title} words={words} /></strong>
               <span className="ref">{it.passage}</span>
               <span className="snip"><Mark text={snip} words={words} /></span>
-              <span className="muted small">{it.date} · {p ? `${p.name} 목사` : it.preacher}</span>
+              <span className="muted small">{it.date} · {p ? `${p} 목사` : ""}</span>
             </Link>
           );
         })}

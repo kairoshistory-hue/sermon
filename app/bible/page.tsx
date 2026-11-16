@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BOOKS, ABBR, OT_COUNT } from "@/lib/bible";
 import { sermonItems } from "@/lib/sermonIndex";
 
-export const metadata = { title: "성경별 설교 · 설교집" };
+export const metadata = { title: "성경별 설교 · Yongin Onnuri Church Sermon" };
 
 export default function BiblePage() {
   const counts = new Map<number, number>();
