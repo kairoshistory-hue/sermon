@@ -9,7 +9,7 @@ export const metadata = {
   icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
   appleWebApp: { capable: true, title: "Onnuri Sermon", statusBarStyle: "default" as const },
 };
-export const viewport = { width: "device-width", initialScale: 1, themeColor: "#3b5ba9" };
+export const viewport = { width: "device-width", initialScale: 1, themeColor: "#ffffff" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const latest = getAllSermons()[0]?.slug;
@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
       </head>
       <body>
-        <header className="appbar"><Link href="/">Yongin Onnuri Church Sermon</Link></header>
+        <header className="appbar"><Link href="/"><img src="/onnuri-logo.png" alt="온누리교회" height={26} /><span>Yongin Onnuri Church Sermon</span></Link></header>
         <main>{children}</main>
         <TabBar latest={latest} />
         <SwRegister />

@@ -13,7 +13,8 @@ export default function ChurchPage({ params }: { params: { id: string } }) {
   return (
     <>
       <Link href="/" className="back">← 교회 목록</Link>
-      <h2 className="pagehead">📁 {church.name} <span className="muted small">{list.length}편</span></h2>
+      <div className="churchhead"><span className="logo-tile sm"><img src="/onnuri-logo.png" alt="" /></span></div>
+      <h2 className="pagehead">{church.name} <span className="muted small">{list.length}편</span></h2>
       <SermonList sermons={list} />
     </>
   );
